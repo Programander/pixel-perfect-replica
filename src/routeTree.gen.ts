@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FuncionariosRouteImport } from './routes/funcionarios'
+import { Route as PacienteRouteImport } from './routes/paciente'
+import { Route as TelemedicinaRouteImport } from './routes/telemedicina'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FuncionariosRoute = FuncionariosRouteImport.update({
+  id: '/funcionarios',
+  path: '/funcionarios',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PacienteRoute = PacienteRouteImport.update({
+  id: '/paciente',
+  path: '/paciente',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TelemedicinaRoute = TelemedicinaRouteImport.update({
+  id: '/telemedicina',
+  path: '/telemedicina',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/funcionarios': typeof FuncionariosRoute
+  '/paciente': typeof PacienteRoute
+  '/telemedicina': typeof TelemedicinaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/funcionarios': typeof FuncionariosRoute
+  '/paciente': typeof PacienteRoute
+  '/telemedicina': typeof TelemedicinaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/funcionarios': typeof FuncionariosRoute
+  '/paciente': typeof PacienteRoute
+  '/telemedicina': typeof TelemedicinaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/funcionarios' | '/paciente' | '/telemedicina'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/funcionarios' | '/paciente' | '/telemedicina'
+  id: '__root__' | '/' | '/funcionarios' | '/paciente' | '/telemedicina'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  FuncionariosRoute: typeof FuncionariosRoute
+  PacienteRoute: typeof PacienteRoute
+  TelemedicinaRoute: typeof TelemedicinaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/funcionarios': {
+      id: '/funcionarios'
+      path: '/funcionarios'
+      fullPath: '/funcionarios'
+      preLoaderRoute: typeof FuncionariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/paciente': {
+      id: '/paciente'
+      path: '/paciente'
+      fullPath: '/paciente'
+      preLoaderRoute: typeof PacienteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/telemedicina': {
+      id: '/telemedicina'
+      path: '/telemedicina'
+      fullPath: '/telemedicina'
+      preLoaderRoute: typeof TelemedicinaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  FuncionariosRoute: FuncionariosRoute,
+  PacienteRoute: PacienteRoute,
+  TelemedicinaRoute: TelemedicinaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
