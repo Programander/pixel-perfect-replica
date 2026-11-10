@@ -11,12 +11,12 @@ export interface Patient {
 }
 export interface Slot {
   id: string; doctorId: string; date: string; time: string; status: SlotStatus;
-  patientId?: string; modality: Modality; reassigned?: boolean; attended?: "asistió" | "no asistió";
+  patientId?: string | undefined; modality: Modality; reassigned?: boolean; attended?: "asistió" | "no asistió";
 }
 export interface Absence { id: string; doctorId: string; from: string; to: string; reason: string }
 export interface TeleRequest {
   id: string; patientId: string; reason: string; createdAt: string;
-  status: "Pendiente de evaluación" | "Aprobada" | "Rechazada"; slotId?: string; note?: string;
+  status: "Pendiente de evaluación" | "Aprobada" | "Rechazada"; slotId?: string | undefined; note?: string | undefined;
 }
 export interface Notification { id: string; patientId: string; text: string; date: string; kind: "recordatorio" | "aviso" | "telemedicina" }
 
