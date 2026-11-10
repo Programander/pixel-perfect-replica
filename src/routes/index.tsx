@@ -23,7 +23,7 @@ const features = [
   { icon: Video, t: "Telemedicina", d: "Controles remotos cuando el profesional lo considere adecuado." },
 ];
 
-const faqs = [
+const faqs: [string, string][] = [
   ["¿Cómo obtengo una hora en Traumatología?", "Debe ser derivado desde su CESFAM mediante interconsulta. Una vez ingresado a la lista de espera, podrá ver su estado en el portal del paciente."],
   ["¿Qué pasa si no puedo asistir a mi cita?", "Cancélela desde el portal con la mayor anticipación posible. El cupo se libera inmediatamente y se reasigna a otro paciente en espera."],
   ["¿Todos los controles pueden ser por telemedicina?", "No. Usted puede solicitarlo, pero la asignación queda sujeta a la evaluación del traumatólogo tratante."],
