@@ -274,7 +274,7 @@ function Appointments() {
 
 function Calendar() {
   const d = useDerived();
-  const [docId, setDocId] = useState(d.s.doctors[0].id);
+  const [docId, setDocId] = useState("d1");
   const [sel, setSel] = useState<Slot | null>(null);
   const days = useMemo(() => {
     const out: string[] = [];

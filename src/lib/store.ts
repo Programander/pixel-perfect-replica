@@ -11,12 +11,12 @@ export interface Patient {
 }
 export interface Slot {
   id: string; doctorId: string; date: string; time: string; status: SlotStatus;
-  patientId?: string; modality: Modality; reassigned?: boolean; attended?: "asistió" | "no asistió";
+  patientId?: string | undefined; modality: Modality; reassigned?: boolean; attended?: "asistió" | "no asistió";
 }
 export interface Absence { id: string; doctorId: string; from: string; to: string; reason: string }
 export interface TeleRequest {
   id: string; patientId: string; reason: string; createdAt: string;
-  status: "Pendiente de evaluación" | "Aprobada" | "Rechazada"; slotId?: string; note?: string;
+  status: "Pendiente de evaluación" | "Aprobada" | "Rechazada"; slotId?: string | undefined; note?: string | undefined;
 }
 export interface Notification { id: string; patientId: string; text: string; date: string; kind: "recordatorio" | "aviso" | "telemedicina" }
 
@@ -47,9 +47,9 @@ function seed(): State {
   const patients: Patient[] = names.map((n, i) => ({
     id: "p" + (i + 1), rut: `${12 + i}.${(345 + i * 7) % 1000}.${(678 + i * 13) % 1000}-${i % 10}`, name: n,
     age: 34 + ((i * 7) % 45), phone: `+56 9 ${8000 + i * 37} ${1000 + i * 91}`,
-    email: n.toLowerCase().split(" ")[0].normalize("NFD").replace(/[\u0300-\u036f]/g, "") + i + "@correo-demo.cl",
-    address: `Av. Ejemplo ${100 + i * 12}, Coquimbo`, diagnosis: dx[i % dx.length],
-    priority: (["Alta", "Media", "Baja"] as const)[i % 3],
+    email: n.toLowerCase().split(" ")[0]!.normalize("NFD").replace(/[\u0300-\u036f]/g, "") + i + "@correo-demo.cl",
+    address: `Av. Ejemplo ${100 + i * 12}, Coquimbo`, diagnosis: dx[i % dx.length]!,
+    priority: (["Alta", "Media", "Baja"] as const)[i % 3]!,
     waitlistSince: fmt(addDays(today, -(40 + i * 23))), waitStatus: i < 6 ? "Citado" : "En espera",
   }));
   const times = ["08:30", "09:15", "10:00", "10:45", "11:30", "15:00", "15:45"];
@@ -63,7 +63,7 @@ function seed(): State {
       const booked = r < 3 && pi < 40;
       slots.push({
         id: uid(), doctorId: doc.id, date: fmt(d), time: t, modality: t >= "15:00" && doc.id !== "d4" ? "telemedicina" : "presencial",
-        status: booked ? "reservada" : "disponible", patientId: booked ? patients[pi++ % 6].id : undefined,
+        status: booked ? "reservada" : "disponible", patientId: booked ? patients[pi++ % 6]!.id : undefined,
       });
     }
   }
@@ -71,7 +71,7 @@ function seed(): State {
   for (let day = 1; day <= 5; day++) {
     const d = addDays(today, -day);
     if (d.getDay() === 0 || d.getDay() === 6) continue;
-    doctors.forEach((doc, k) => slots.push({ id: uid(), doctorId: doc.id, date: fmt(d), time: "09:15", status: "reservada", modality: "presencial", patientId: patients[6 + k].id, attended: (day + k) % 4 === 0 ? "no asistió" : "asistió" }));
+    doctors.forEach((doc, k) => slots.push({ id: uid(), doctorId: doc.id, date: fmt(d), time: "09:15", status: "reservada", modality: "presencial", patientId: patients[6 + k]!.id, attended: (day + k) % 4 === 0 ? "no asistió" : "asistió" }));
   }
   return {
     doctors, patients, slots, absences: [],
