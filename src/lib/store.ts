@@ -5,7 +5,7 @@ export type Modality = "presencial" | "telemedicina";
 
 export interface Doctor { id: string; name: string; area: string; color: string }
 export interface Patient {
-  id: string; rut: string; name: string; age: number; phone: string; email: string; address: string;
+  id: string; rut: string; name: string; age: number; phone: string; email: string; address: string; commune: string;
   diagnosis: string; priority: "Alta" | "Media" | "Baja"; waitlistSince: string;
   waitStatus: "En espera" | "Citado" | "Atendido" | "Egresado";
 }
@@ -44,11 +44,14 @@ function seed(): State {
   ];
   const names = ["María González", "José Muñoz", "Ana Pérez", "Luis Soto", "Carmen Díaz", "Pedro Contreras", "Rosa Silva", "Jorge Vega", "Patricia Castillo", "Manuel Morales", "Elena Herrera", "Ricardo Núñez", "Sofía Pizarro", "Héctor Cortés", "Valentina Ramos", "Andrés Olivares"];
   const dx = ["Gonartrosis", "Lumbago crónico", "Tendinitis manguito rotador", "Coxartrosis", "Esguince tobillo", "Hernia discal", "Fractura consolidada (control)", "Túnel carpiano"];
+  const communes = ["Coquimbo", "La Serena", "Ovalle", "Andacollo", "Vicuña", "Illapel", "Los Vilos", "Salamanca"];
   const patients: Patient[] = names.map((n, i) => ({
     id: "p" + (i + 1), rut: `${12 + i}.${(345 + i * 7) % 1000}.${(678 + i * 13) % 1000}-${i % 10}`, name: n,
     age: 34 + ((i * 7) % 45), phone: `+56 9 ${8000 + i * 37} ${1000 + i * 91}`,
     email: n.toLowerCase().split(" ")[0]!.normalize("NFD").replace(/[\u0300-\u036f]/g, "") + i + "@correo-demo.cl",
-    address: `Av. Ejemplo ${100 + i * 12}, Coquimbo`, diagnosis: dx[i % dx.length]!,
+    address: `Av. Ejemplo ${100 + i * 12}, Coquimbo`,
+    commune: communes[i % communes.length]!,
+    diagnosis: dx[i % dx.length]!,
     priority: (["Alta", "Media", "Baja"] as const)[i % 3]!,
     waitlistSince: fmt(addDays(today, -(40 + i * 23))), waitStatus: i < 6 ? "Citado" : "En espera",
   }));
@@ -93,11 +96,29 @@ let state: State = seed();
 const listeners = new Set<() => void>();
 let loaded = false;
 
+
 export function loadStore() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
-  try { const raw = localStorage.getItem(KEY); if (raw) { state = JSON.parse(raw); emit(); } } catch { /* ignore */ }
+
+  try {
+    const raw = localStorage.getItem(KEY);
+
+    if (raw) {
+      state = JSON.parse(raw) as State;
+
+      state.patients = state.patients.map((patient) => ({
+        ...patient,
+        commune: patient.commune || "Coquimbo",
+      }));
+
+      emit();
+    }
+  } catch {
+    /* ignore */
+  }
 }
+
 function emit() { listeners.forEach((l) => l()); }
 function set(fn: (s: State) => State) {
   state = fn(state);
@@ -118,14 +139,56 @@ const slotLabel = (s: State, slot: Slot) =>
   `${prettyDate(slot.date)} ${slot.time} con ${s.doctors.find((d) => d.id === slot.doctorId)?.name}`;
 
 export const actions = {
-  reset() { loaded = true; set(() => seed()); },
-  loginPatient(id: string | null) { set((s) => ({ ...s, sessionPatientId: id })); },
-  loginStaff(v: boolean) { set((s) => ({ ...s, sessionStaff: v })); },
-  updatePatient(id: string, data: Partial<Patient>) {
-    set((s) => ({ ...s, patients: s.patients.map((p) => (p.id === id ? { ...p, ...data } : p)) }));
+  reset() {
+    set((s) => {
+      if (!s.sessionStaff) return s;
+
+      loaded = true;
+      return seed();
+    });
   },
+  loginPatient(id: string | null) {
+    set((s) => ({
+      ...s,
+      sessionPatientId: id,
+      sessionStaff: false,
+    }));
+  },
+  loginStaff(v: boolean) {
+    set((s) => ({
+      ...s,
+      sessionStaff: v,
+      sessionPatientId: null,
+    }));
+  },
+  updatePatient(id: string, data: Partial<Patient>) {
+    set((s) => ({
+      ...s,
+      patients: s.patients.map((p) => {
+        if (p.id !== id) return p;
+
+        // Los funcionarios pueden actualizar toda la ficha.
+        if (s.sessionStaff) {
+          return { ...p, ...data };
+        }
+
+        // Los pacientes solo pueden modificar sus propios datos de contacto.
+        if (s.sessionPatientId !== id) return p;
+
+        return {
+          ...p,
+          phone: data.phone ?? p.phone,
+          email: data.email ?? p.email,
+          address: data.address ?? p.address,
+          commune: data.commune ?? p.commune,
+        };
+      }),
+    }));
+  },
+ 
   book(slotId: string, patientId: string, reassigned = false) {
     set((s) => {
+      if (!s.sessionStaff) return s;
       const slot = s.slots.find((x) => x.id === slotId)!;
       return {
         ...s,
@@ -136,20 +199,50 @@ export const actions = {
       };
     });
   },
+  
   cancel(slotId: string, by: "paciente" | "funcionario") {
     set((s) => {
-      const slot = s.slots.find((x) => x.id === slotId)!;
+      if (!s.sessionStaff) return s;
+
+      const slot = s.slots.find((x) => x.id === slotId);
+      if (!slot) return s;
+
       return {
         ...s,
-        slots: s.slots.map((x) => (x.id === slotId ? { ...x, status: "disponible", patientId: undefined, reassigned: false } : x)),
-        stats: { ...s.stats, cancellations: s.stats.cancellations + 1 },
-        notifications: slot.patientId ? notify(s, slot.patientId, `Su cita del ${slotLabel(s, slot)} fue cancelada${by === "funcionario" ? " por el hospital" : ""}. El cupo quedó disponible para otro paciente.`) : s.notifications,
+        slots: s.slots.map((x) =>
+          x.id === slotId
+            ? {
+                ...x,
+                status: "disponible",
+                patientId: undefined,
+                reassigned: false,
+              }
+            : x
+        ),
+        patients: s.patients.map((p) =>
+          p.id === slot.patientId && p.waitStatus === "Citado"
+            ? { ...p, waitStatus: "En espera" }
+            : p
+        ),
+        stats: {
+          ...s.stats,
+          cancellations: s.stats.cancellations + 1,
+        },
+        notifications: slot.patientId
+          ? notify(
+              s,
+              slot.patientId,
+              `Su cita del ${slotLabel(s, slot)} fue cancelada${by === "funcionario" ? " por el hospital" : ""}. Ha vuelto a la lista de espera.`
+            )
+          : s.notifications,
       };
     });
   },
+
   /** Moves the patient of an affected/booked slot into a free slot. */
   move(fromSlotId: string, toSlotId: string) {
     set((s) => {
+      if (!s.sessionStaff) return s;
       const from = s.slots.find((x) => x.id === fromSlotId)!;
       const to = s.slots.find((x) => x.id === toSlotId)!;
       return {
@@ -163,15 +256,31 @@ export const actions = {
     });
   },
   addAbsence(doctorId: string, from: string, to: string, reason: string) {
-    set((s) => ({
-      ...s,
-      absences: [...s.absences, { id: uid(), doctorId, from, to, reason }],
-      slots: s.slots.map((x) => x.doctorId === doctorId && x.date >= from && x.date <= to
-        ? { ...x, status: x.status === "reservada" ? "afectada" : x.status === "disponible" ? "bloqueada" : x.status } : x),
-    }));
+    set((s) => {
+      if (!s.sessionStaff) return s;
+
+      return {
+        ...s,
+        absences: [...s.absences, { id: uid(), doctorId, from, to, reason }],
+        slots: s.slots.map((x) =>
+          x.doctorId === doctorId && x.date >= from && x.date <= to
+            ? {
+                ...x,
+                status:
+                  x.status === "reservada"
+                    ? "afectada"
+                    : x.status === "disponible"
+                      ? "bloqueada"
+                      : x.status,
+              }
+            : x
+        ),
+      };
+    });
   },
   removeAbsence(id: string) {
     set((s) => {
+      if (!s.sessionStaff) return s;
       const a = s.absences.find((x) => x.id === id)!;
       return {
         ...s, absences: s.absences.filter((x) => x.id !== id),
@@ -181,16 +290,43 @@ export const actions = {
     });
   },
   markAttendance(slotId: string, v: "asistió" | "no asistió") {
-    set((s) => ({ ...s, slots: s.slots.map((x) => (x.id === slotId ? { ...x, attended: v } : x)) }));
+    set((s) => {
+      if (!s.sessionStaff) return s;
+
+      return {
+        ...s,
+        slots: s.slots.map((x) => (x.id === slotId ? { ...x, attended: v } : x)),
+      };
+    });
   },
   requestTele(patientId: string, reason: string) {
-    set((s) => ({
-      ...s, tele: [{ id: uid(), patientId, reason, createdAt: fmt(new Date()), status: "Pendiente de evaluación" }, ...s.tele],
-      notifications: notify(s, patientId, "Recibimos su solicitud de telemedicina. Un traumatólogo evaluará si su control puede realizarse de forma remota.", "telemedicina"),
-    }));
+    set((s) => {
+      if (!s.sessionStaff) return s;
+
+      return {
+        ...s,
+        tele: [
+          {
+            id: uid(),
+            patientId,
+            reason,
+            createdAt: fmt(new Date()),
+            status: "Pendiente de evaluación",
+          },
+          ...s.tele,
+        ],
+        notifications: notify(
+          s,
+          patientId,
+          "Su caso será evaluado por el equipo del hospital para determinar si corresponde telemedicina.",
+          "telemedicina"
+        ),
+      };
+    });
   },
   decideTele(id: string, approve: boolean, slotId?: string, note?: string) {
     set((s) => {
+      if (!s.sessionStaff) return s;
       const r = s.tele.find((x) => x.id === id)!;
       const slot = slotId ? s.slots.find((x) => x.id === slotId) : undefined;
       return {

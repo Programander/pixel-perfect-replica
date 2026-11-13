@@ -4,26 +4,44 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import type { SlotStatus } from "@/lib/store";
 
+
 export function Logo() {
   return (
-    <Link to="/" className="flex items-center gap-2">
-      <span className="grid size-9 place-items-center rounded-xl bg-hero text-primary-foreground shadow-soft">
-        <HeartPulse className="size-5" />
+    <Link to="/" className="flex items-center gap-3">
+      {/* Identidad de Conecta Salud */}
+      <span className="flex shrink-0 items-center gap-2">
+        <span className="grid size-9 place-items-center rounded-xl bg-hero text-primary-foreground shadow-soft">
+          <HeartPulse className="size-5" />
+        </span>
+        <span className="font-display text-lg font-bold text-primary-deep">
+          Conecta <span className="text-success">Salud</span>
+        </span>
       </span>
-      <span className="font-display text-lg font-bold text-primary-deep">
-        Conecta <span className="text-success">Salud</span>
+
+      {/* Separador */}
+      <span className="h-9 w-px bg-border" />
+
+      {/* Identidad académica UCN */}
+      <span className="flex items-center gap-2">
+        <img
+          src="/ucn-isologo.png"
+          alt="Universidad Católica del Norte"
+          className="h-8 w-auto max-w-[110px] object-contain"
+        />
+        <span className="hidden text-[10px] leading-tight text-muted-foreground sm:block">
+          Proyecto<br />académico
+        </span>
       </span>
     </Link>
   );
 }
 
+
 const links = [
   { to: "/", label: "Inicio" },
   { to: "/paciente", label: "Portal paciente" },
   { to: "/funcionarios", label: "Funcionarios" },
-  { to: "/telemedicina", label: "Telemedicina" },
 ] as const;
-
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   return (

@@ -92,9 +92,7 @@ function Dashboard({ patient }: { patient: Patient }) {
       <Tabs defaultValue="inicio" className="mt-6">
         <TabsList className="flex h-auto flex-wrap justify-start">
           <TabsTrigger value="inicio"><CalendarDays /> Mis citas</TabsTrigger>
-          <TabsTrigger value="agendar"><CalendarPlus /> Agendar</TabsTrigger>
           <TabsTrigger value="espera"><ListOrdered /> Lista de espera</TabsTrigger>
-          <TabsTrigger value="tele"><Video /> Telemedicina</TabsTrigger>
           <TabsTrigger value="avisos"><Bell /> Avisos ({notes.length})</TabsTrigger>
           <TabsTrigger value="datos"><User /> Mis datos</TabsTrigger>
           <TabsTrigger value="info"><Info /> Información</TabsTrigger>
@@ -103,7 +101,7 @@ function Dashboard({ patient }: { patient: Patient }) {
         <TabsContent value="inicio" className="mt-6 grid gap-6 lg:grid-cols-3">
           <div className="space-y-3 lg:col-span-2">
             <h2 className="text-xl font-bold">Próximas citas</h2>
-            {myAppts.length === 0 && <Empty text="No tiene citas próximas. Puede agendar una en la pestaña Agendar." />}
+            {myAppts.length === 0 && <Empty text="No tiene citas próximas asignadas. Si necesita información, comuníquese con el hospital." />}
             {myAppts.map((a) => (
               <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card p-4 shadow-soft">
                 <div className="flex items-center gap-4">
@@ -117,9 +115,6 @@ function Dashboard({ patient }: { patient: Patient }) {
                     {a.status === "afectada" && <div className="mt-1 text-xs font-medium text-destructive">El profesional estará ausente. El hospital le reprogramará pronto.</div>}
                   </div>
                 </div>
-                <Button variant="outline" className="text-destructive" onClick={() => { actions.cancel(a.id, "paciente"); toast.success("Cita cancelada. El cupo quedó disponible para otro paciente."); }}>
-                  <XCircle /> Cancelar
-                </Button>
               </div>
             ))}
           </div>
@@ -129,7 +124,7 @@ function Dashboard({ patient }: { patient: Patient }) {
           </div>
         </TabsContent>
 
-        <TabsContent value="agendar" className="mt-6"><Book patient={patient} /></TabsContent>
+        
 
         <TabsContent value="espera" className="mt-6">
           <div className="max-w-2xl rounded-3xl border bg-card p-8 shadow-soft">
@@ -146,18 +141,7 @@ function Dashboard({ patient }: { patient: Patient }) {
           </div>
         </TabsContent>
 
-        <TabsContent value="tele" className="mt-6 grid gap-6 lg:grid-cols-2"><TeleRequestForm patientId={patient.id} />
-          <div className="space-y-3">
-            <h2 className="text-xl font-bold">Mis solicitudes</h2>
-            {myTele.length === 0 && <Empty text="Aún no ha solicitado controles remotos." />}
-            {myTele.map((t) => (
-              <div key={t.id} className="rounded-2xl border bg-card p-4">
-                <div className="flex items-center justify-between"><span className="font-medium">{t.reason}</span><StatusBadge status={t.status} /></div>
-                <div className="mt-1 text-xs text-muted-foreground">Solicitado el {prettyDate(t.createdAt)}{t.note ? ` · ${t.note}` : ""}</div>
-              </div>
-            ))}
-          </div>
-        </TabsContent>
+        
 
         <TabsContent value="avisos" className="mt-6 max-w-2xl space-y-3">
           {notes.map((n) => <NoteCard key={n.id} text={n.text} date={n.date} />)}
@@ -238,7 +222,12 @@ function TeleRequestForm({ patientId }: { patientId: string }) {
 }
 
 function ProfileForm({ patient }: { patient: Patient }) {
-  const [f, setF] = useState({ phone: patient.phone, email: patient.email, address: patient.address });
+  const [f, setF] = useState({
+  phone: patient.phone,
+  email: patient.email,
+  address: patient.address,
+  commune: patient.commune,
+  });
   return (
     <form className="max-w-xl space-y-4 rounded-3xl border bg-card p-6 shadow-soft"
       onSubmit={(e) => { e.preventDefault(); actions.updatePatient(patient.id, f); toast.success("Datos actualizados. El equipo del hospital ya ve su información nueva."); }}>
@@ -250,6 +239,7 @@ function ProfileForm({ patient }: { patient: Patient }) {
       <div><Label>Teléfono</Label><Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} /></div>
       <div><Label>Correo</Label><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></div>
       <div><Label>Dirección</Label><Input value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} /></div>
+      <div><Label>Comuna de residencia</Label><Input value={f.commune} onChange={(e) => setF({ ...f, commune: e.target.value })} placeholder="Ej. Coquimbo" /></div>
       <Button type="submit">Guardar cambios</Button>
     </form>
   );
