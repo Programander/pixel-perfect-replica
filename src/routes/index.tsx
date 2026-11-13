@@ -44,14 +44,14 @@ function Index() {
               <Bone className="size-3.5" /> CAE de Traumatología · Hospital San Pablo de Coquimbo
             </span>
 
+            
             <h1 className="mt-5 text-4xl font-extrabold leading-tight md:text-5xl">
-              Su atención en traumatología, más cerca y sin esperas innecesarias.
+              Mejor coordinación para una atención traumatológica más oportuna.
             </h1>
-
             <p className="mt-4 max-w-lg text-primary-foreground/85">
-              Conecta Salud conecta pacientes y equipos clínicos para aprovechar
-              cada hora médica, mejorar la comunicación y reducir las listas de espera.
+              Conecta Salud facilita la gestión de citas, disponibilidad médica y listas de espera, mejorando la coordinación del equipo de salud y entregando a los pacientes información clara sobre su proceso de atención.
             </p>
+
 
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" variant="secondary">
